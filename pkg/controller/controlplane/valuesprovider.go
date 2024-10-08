@@ -456,7 +456,7 @@ func getCSIControllerChartValues(
 		return nil, fmt.Errorf("secret %q not found", csiSnapshotValidationServerName)
 	}
 
-	return map[string]interface{}{
+	values := map[string]interface{}{
 		"enabled":   true,
 		"replicas":  extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 		"projectID": serviceAccount.ProjectID,
@@ -474,7 +474,32 @@ func getCSIControllerChartValues(
 			},
 			"topologyAwareRoutingEnabled": gardencorev1beta1helper.IsTopologyAwareRoutingForShootControlPlaneEnabled(cluster.Seed, cluster.Shoot),
 		},
-	}, nil
+	}
+
+	csiProvisionerFeatureGates := map[string]string{
+		"Topology": "true",
+	}
+
+	if _, ok := cluster.Shoot.Annotations[gcp.AnnotationEnableModifyVolume]; ok {
+		csiProvisionerFeatureGates["VolumeAttributesClass"] = "true"
+		values["csiDriver"] = map[string]interface{}{
+			"storage": map[string]interface{}{
+				"supportsDynamicIopsProvisioning":       []string{"hyperdisk-balanced", "hyperdisk-extreme"},
+				"supportsDynamicThroughputProvisioning": []string{"hyperdisk-balanced", "hyperdisk-throughput", "hyperdisk-ml"},
+			},
+		}
+		values["csiResizer"] = map[string]interface{}{
+			"featureGates": map[string]string{
+				"VolumeAttributesClass": "true",
+			},
+		}
+	}
+
+	values["csiProvisioner"] = map[string]interface{}{
+		"featureGates": csiProvisionerFeatureGates,
+	}
+
+	return values, nil
 }
 
 // getControlPlaneShootChartValues collects and returns the control plane shoot chart values.
