@@ -168,7 +168,7 @@ spec:
         - --leader-election-namespace=kube-system
         - --handle-volume-inuse-error=false
         {{- if ((.Values.csiResizer).featureGates) }}
-        - -feature-gates={{ range $feature, $enabled := .Values.csiResizer.featureGates }}{{ $feature }}={{ $enabled }},{{ end }}
+        - --feature-gates={{ range $feature, $enabled := .Values.csiResizer.featureGates }}{{ $feature }}={{ $enabled }},{{ end }}
         {{- end }}
         - --v=5
         env:

@@ -24,6 +24,7 @@ import (
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	"golang.org/x/mod/semver"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -476,27 +477,26 @@ func getCSIControllerChartValues(
 		},
 	}
 
-	csiProvisionerFeatureGates := map[string]string{
-		"Topology": "true",
-	}
-
-	if _, ok := cluster.Shoot.Annotations[gcp.AnnotationEnableModifyVolume]; ok {
-		csiProvisionerFeatureGates["VolumeAttributesClass"] = "true"
-		values["csiDriver"] = map[string]interface{}{
-			"storage": map[string]interface{}{
-				"supportsDynamicIopsProvisioning":       []string{"hyperdisk-balanced", "hyperdisk-extreme"},
-				"supportsDynamicThroughputProvisioning": []string{"hyperdisk-balanced", "hyperdisk-throughput", "hyperdisk-ml"},
-			},
+	if semver.Compare(cluster.Shoot.Spec.Kubernetes.Version, "1.30.0") > 0 {
+		if _, ok := cluster.Shoot.Annotations[gcp.AnnotationEnableVolumeAttributesClass]; ok {
+			values["csiDriver"] = map[string]interface{}{
+				"storage": map[string]interface{}{
+					"supportsDynamicIopsProvisioning":       []string{"hyperdisk-balanced", "hyperdisk-extreme"},
+					"supportsDynamicThroughputProvisioning": []string{"hyperdisk-balanced", "hyperdisk-throughput", "hyperdisk-ml"},
+				},
+			}
+			values["csiResizer"] = map[string]interface{}{
+				"featureGates": map[string]string{
+					"VolumeAttributesClass": "true",
+				},
+			}
+			values["csiProvisioner"] = map[string]interface{}{
+				"featureGates": map[string]string{
+					"VolumeAttributesClass": "true",
+				},
+			}
 		}
-		values["csiResizer"] = map[string]interface{}{
-			"featureGates": map[string]string{
-				"VolumeAttributesClass": "true",
-			},
-		}
-	}
 
-	values["csiProvisioner"] = map[string]interface{}{
-		"featureGates": csiProvisionerFeatureGates,
 	}
 
 	return values, nil

@@ -262,11 +262,6 @@ var _ = Describe("ValuesProvider", func() {
 						},
 						"topologyAwareRoutingEnabled": false,
 					},
-					"csiProvisioner": map[string]interface{}{
-						"featureGates": map[string]string{
-							"Topology": "true",
-						},
-					},
 				}),
 			}))
 		})

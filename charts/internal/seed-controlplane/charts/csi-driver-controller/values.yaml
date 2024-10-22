@@ -49,10 +49,6 @@ csiSnapshotController:
       cpu: 11m
       memory: 32Mi
 
-csiProvisioner:
-  featureGates:
-    Topology: true
-
 csiSnapshotValidationWebhook:
   replica: 1
   podAnnotations: {}
